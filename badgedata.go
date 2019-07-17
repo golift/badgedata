@@ -1,0 +1,56 @@
+// Package badgedata provides a collection of methods to retreive, store and re-display
+// data from other websites. The intent is to use the displayed data with badgen.net.
+package badgedata
+
+import (
+	"log"
+	"net/http"
+	"strings"
+	"sync"
+)
+
+var routersMu sync.Mutex
+var routes routers
+
+type routers map[string]http.HandlerFunc
+
+// Handler returns the main handler for /badgedata endpoint.
+func Handler() http.HandlerFunc {
+	routersMu.Lock()
+	defer routersMu.Unlock()
+	// We copy all the routes into a new map so we can avoid locking on every request.
+	reroute := make(routers)
+	for i, v := range routes {
+		reroute[i] = v
+	}
+	log.Println("handling routes: ", len(reroute))
+	return reroute.ServeHTTP
+}
+
+func (routeMap routers) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.Split(r.URL.Path, "/")
+	if len(path) < 3 {
+		http.Error(w, "missing path segments", http.StatusNotFound)
+		return
+	}
+	route := path[2]
+	handler, ok := routeMap[route]
+	if !ok {
+		http.Error(w, "not found: "+route, http.StatusNotFound)
+		return
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Register should only be called from init functions.
+// Registrations created after calling Handler() will not work.
+func Register(name string, function http.HandlerFunc) {
+	routersMu.Lock()
+	defer routersMu.Unlock()
+	if routes == nil {
+		routes = make(routers)
+	}
+	log.Print("registered " + name)
+	routes[name] = function
+}
