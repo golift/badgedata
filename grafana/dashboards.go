@@ -13,7 +13,7 @@ import (
 )
 
 // DashboardAPI is the URL to the JSON API at Grafana.com
-const DashboardAPI = "https://grafana.com/api/dashboards/%v"
+const DashboardAPI = "https://grafana.com/api/dashboards/"
 
 const refreshTime = time.Hour
 
@@ -109,7 +109,11 @@ func fetchDashboards(ids []string) ([]Dashboard, error) {
 // fetchDashboards returns dashboard data from the grafana api for a single dashboard.
 func fetchDashboard(id string) (Dashboard, error) {
 	board := Dashboard{Ts: time.Now()}
-	URL := fmt.Sprintf(DashboardAPI, id)
+	if _, err := strconv.ParseInt(id, 10, 64); err != nil {
+		// We only accept numbers.
+		return board, err
+	}
+	URL := DashboardAPI + id
 	log.Println("Fetching", URL)
 
 	resp, err := http.Get(URL)
