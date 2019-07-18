@@ -3,7 +3,6 @@
 package badgedata
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -23,7 +22,6 @@ func Handler() http.HandlerFunc {
 	for i, v := range routes {
 		reroute[i] = v
 	}
-	log.Println("handling routes: ", len(reroute))
 	return reroute.ServeHTTP
 }
 
@@ -51,6 +49,5 @@ func Register(name string, function http.HandlerFunc) {
 	if routes == nil {
 		routes = make(routers)
 	}
-	log.Print("registered " + name)
 	routes[name] = function
 }
