@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"code.golift.io/badgedata"
+	"golift.io/badgedata"
 )
 
 func init() {
