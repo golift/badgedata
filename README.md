@@ -3,7 +3,7 @@
 Simple Go library to collect remote data for use as badgen badge source data.
 
 ```shell
-go get code.golift.io/badgedata
+go get golift.io/badgedata
 ```
 
 ## Example
@@ -19,8 +19,8 @@ package main
 import (
 	"net/http"
 
-	"code.golift.io/badgedata"
-	_ "code.golift.io/badgedata/grafana"
+	"golift.io/badgedata"
+	_ "golift.io/badgedata/grafana"
 )
 
 func main() {
@@ -38,4 +38,4 @@ curl http://127.0.0.1:8080/bd/grafana/dashboard-count/10418,10417,10416,10415
 
 Replace the numbers with IDs of dashboards on Grafana.com you want download counts for.
 
-In Action: [![grafana](https://badgen.net/https/code.golift.io/bd/grafana/dashboard-downloads/10414,10415,10416,10417,10418?icon=https://simpleicons.now.sh/grafana/ED7F38&color=0011ff "Grafana Dashboard Downloads")](http://grafana.com/dashboards?search=unifi-poller)
+In Action: [![grafana](https://badgen.net/https/golift.io/bd/grafana/dashboard-downloads/10414,10415,10416,10417,10418?icon=https://simpleicons.now.sh/grafana/ED7F38&color=0011ff "Grafana Dashboard Downloads")](http://grafana.com/dashboards?search=unifi-poller)
