@@ -1,4 +1,4 @@
-// Package badgedata provides a collection of methods to retreive, store and re-display
+// Package badgedata provides a collection of methods to retrieve, store and re-display
 // data from other websites. The intent is to use the displayed data with badgen.net.
 package badgedata
 
@@ -8,8 +8,11 @@ import (
 	"sync"
 )
 
-var routersMu sync.Mutex
-var routes routers
+//nolint:gochecknoglobals
+var (
+	routersMu sync.Mutex
+	routes    routers
+)
 
 type routers map[string]http.HandlerFunc
 
@@ -17,28 +20,30 @@ type routers map[string]http.HandlerFunc
 func Handler() http.HandlerFunc {
 	routersMu.Lock()
 	defer routersMu.Unlock()
+
 	// We copy all the routes into a new map so we can avoid locking on every request.
 	reroute := make(routers)
 	for i, v := range routes {
 		reroute[i] = v
 	}
+
 	return reroute.ServeHTTP
 }
 
-func (routeMap routers) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := strings.Split(r.URL.Path, "/")
+func (routeMap routers) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	path := strings.Split(req.URL.Path, "/")
 	if len(path) < 3 {
-		http.Error(w, "missing path segments", http.StatusNotFound)
+		http.Error(resp, "missing path segments", http.StatusNotFound)
 		return
 	}
 	route := path[2]
 	handler, ok := routeMap[route]
 	if !ok {
-		http.Error(w, "not found: "+route, http.StatusNotFound)
+		http.Error(resp, "not found: "+route, http.StatusNotFound)
 		return
 	}
 
-	handler.ServeHTTP(w, r)
+	handler.ServeHTTP(resp, req)
 }
 
 // Register should only be called from init functions.

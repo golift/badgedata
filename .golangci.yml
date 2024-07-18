@@ -1,0 +1,15 @@
+linters:
+  enable-all: true
+  disable:
+  # deprecated
+  - execinquery
+  - gomnd
+  # unused
+  - gochecknoinits
+  - exhaustruct
+  - nlreturn
+  - wsl
+  - mnd
+
+run:
+  timeout: 3m
