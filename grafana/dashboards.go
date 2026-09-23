@@ -134,7 +134,7 @@ func fetchDashboards(ctx context.Context, ids []string) ([]Dashboard, error) {
 	return boards, nil
 }
 
-// fetchDashboards returns dashboard data from the grafana api for a single dashboard.
+// fetchDashboard returns dashboard data from the grafana api for a single dashboard.
 func fetchDashboard(ctx context.Context, dashID string) (Dashboard, error) {
 	board := Dashboard{Time: time.Now()}
 

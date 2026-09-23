@@ -29,6 +29,11 @@ func TestServeHTTPRejectsBadRoutes(t *testing.T) {
 	if many.Code != http.StatusInternalServerError {
 		t.Fatalf("too many ids status %d body %s", many.Code, many.Body.String())
 	}
+
+	badID := serve(t, "/badgedata/grafana/dashboard-count/abc")
+	if badID.Code != http.StatusInternalServerError || !strings.Contains(badID.Body.String(), "invalid dashboard ID") {
+		t.Fatalf("bad id status %d body %s", badID.Code, badID.Body.String())
+	}
 }
 
 func TestServeHTTPDashboardCountUsesCache(t *testing.T) { //nolint:paralleltest // mutates the package dashboard cache.
@@ -58,8 +63,15 @@ func TestServeHTTPDashboardCountUsesCache(t *testing.T) { //nolint:paralleltest 
 	t.Cleanup(func() { DashboardAPI = orig })
 
 	dashboarMu.Lock()
+	origBoards := dashboards
 	dashboards = map[string]Dashboard{}
 	dashboarMu.Unlock()
+
+	t.Cleanup(func() {
+		dashboarMu.Lock()
+		dashboards = origBoards
+		dashboarMu.Unlock()
+	})
 
 	got := serve(t, "/badgedata/grafana/dashboard-count/42")
 	if got.Code != http.StatusOK {

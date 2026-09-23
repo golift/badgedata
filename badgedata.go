@@ -3,6 +3,7 @@
 package badgedata
 
 import (
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -25,10 +26,8 @@ func Handler() http.HandlerFunc {
 	defer routersMu.Unlock()
 
 	// We copy all the routes into a new map so we can avoid locking on every request.
-	reroute := make(routers)
-	for i, v := range routes {
-		reroute[i] = v
-	}
+	reroute := make(routers, len(routes))
+	maps.Copy(reroute, routes)
 
 	return reroute.ServeHTTP
 }

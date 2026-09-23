@@ -35,8 +35,6 @@ func TestHandlerRoutes(t *testing.T) {
 	}
 
 	for _, item := range tests {
-		item := item
-
 		t.Run(item.path, func(t *testing.T) {
 			t.Parallel()
 

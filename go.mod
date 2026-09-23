@@ -1,3 +1,3 @@
 module golift.io/badgedata
 
-go 1.20
+go 1.26.0
