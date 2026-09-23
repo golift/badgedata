@@ -14,7 +14,10 @@ import (
 )
 
 // DashboardAPI is the URL to the JSON API at Grafana.com.
-const DashboardAPI = "https://grafana.com/api/dashboards/"
+// Tests point this at a local server.
+//
+//nolint:gochecknoglobals // tests replace this with a local server.
+var DashboardAPI = "https://grafana.com/api/dashboards/"
 
 const refreshTime = time.Hour
 
@@ -137,7 +140,8 @@ func fetchDashboard(ctx context.Context, dashID string) (Dashboard, error) {
 	log.Println("Fetching", url)
 
 	client := http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return board, fmt.Errorf("creating request: %w", err)
 	}
@@ -146,14 +150,15 @@ func fetchDashboard(ctx context.Context, dashID string) (Dashboard, error) {
 	if err != nil {
 		return board, fmt.Errorf("making request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return board, fmt.Errorf("reading response: %w", err)
 	}
 
-	if err = json.Unmarshal(body, &board); err != nil {
+	err = json.Unmarshal(body, &board)
+	if err != nil {
 		return board, fmt.Errorf("parsing response: %w", err)
 	}
 

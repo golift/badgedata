@@ -36,7 +36,9 @@ func (routeMap routers) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		http.Error(resp, "missing path segments", http.StatusNotFound)
 		return
 	}
+
 	route := path[2]
+
 	handler, ok := routeMap[route]
 	if !ok {
 		http.Error(resp, "not found: "+route, http.StatusNotFound)
@@ -51,8 +53,10 @@ func (routeMap routers) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 func Register(name string, function http.HandlerFunc) {
 	routersMu.Lock()
 	defer routersMu.Unlock()
+
 	if routes == nil {
 		routes = make(routers)
 	}
+
 	routes[name] = function
 }

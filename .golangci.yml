@@ -1,15 +1,50 @@
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-  # deprecated
-  - execinquery
-  - gomnd
-  # unused
-  - gochecknoinits
-  - exhaustruct
-  - nlreturn
-  - wsl
-  - mnd
-
-run:
-  timeout: 3m
+    - nlreturn
+    - exhaustruct
+    - exhaustruct_v5
+    - depguard
+    - wsl
+    - wsl_v5
+    - goconst
+    - gomodguard
+    - noinlineerr
+    - nonamedreturns
+    - gochecknoinits
+    - mnd
+  exclusions:
+    rules:
+      - linters:
+          - funlen
+          - goconst
+          - wsl
+          - errcheck
+          - err113
+          - testpackage
+          - cyclop
+        path: .+_test.go
+  settings:
+    gosec:
+      excludes:
+        - G304
+        - G115
+        - G705
+    gocritic:
+      enable-all: true
+      disabled-checks:
+        - whyNoLint
+        - commentedOutCode
+      settings:
+        unnamedResult:
+          checkExported: true
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
