@@ -2,43 +2,12 @@ version: "2"
 linters:
   default: all
   disable:
-    - nlreturn
-    - exhaustruct
-    - exhaustruct_v5
-    - depguard
-    - wsl
-    - wsl_v5
-    - goconst
-    - gomodguard
-    - noinlineerr
-    - nonamedreturns
-    - gochecknoinits
-    - mnd
-  exclusions:
-    rules:
-      - linters:
-          - funlen
-          - goconst
-          - wsl
-          - errcheck
-          - err113
-          - testpackage
-          - cyclop
-        path: .+_test.go
-  settings:
-    gosec:
-      excludes:
-        - G304
-        - G115
-        - G705
-    gocritic:
-      enable-all: true
-      disabled-checks:
-        - whyNoLint
-        - commentedOutCode
-      settings:
-        unnamedResult:
-          checkExported: true
+    - nlreturn # wsl_v5 is good enough.
+    - wsl # deprecated.
+    - exhaustruct # deprecated.
+    - exhaustruct_v5 # partial literals are normal: JSON decode and http.Client timeout.
+    - gomodguard # deprecated.
+    - depguard # flags this module importing itself.
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

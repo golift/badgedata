@@ -16,6 +16,9 @@ var (
 
 type routers map[string]http.HandlerFunc
 
+// /badgedata/<name> splits into ["", "badgedata", name].
+const minPathSegments = 3
+
 // Handler returns the main handler for /badgedata endpoint.
 func Handler() http.HandlerFunc {
 	routersMu.Lock()
@@ -32,7 +35,7 @@ func Handler() http.HandlerFunc {
 
 func (routeMap routers) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	path := strings.Split(req.URL.Path, "/")
-	if len(path) < 3 {
+	if len(path) < minPathSegments {
 		http.Error(resp, "missing path segments", http.StatusNotFound)
 		return
 	}

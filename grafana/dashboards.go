@@ -19,7 +19,12 @@ import (
 //nolint:gochecknoglobals // tests replace this with a local server.
 var DashboardAPI = "https://grafana.com/api/dashboards/"
 
-const refreshTime = time.Hour
+const (
+	refreshTime           = time.Hour
+	requestTimeout        = 10 * time.Second
+	dashboardPathSegments = 5 // /badgedata/grafana/dashboard-count/<ids>
+	maxDashboardIDs       = 50
+)
 
 // Dashboard holds a dashboard's name and download count.
 // This is a small snippet of the data available from the Grafana API.
@@ -46,13 +51,13 @@ func dashboardInit() {
 // WriteDashboardDownloadCount makes sure data is fresh and returns the count for dashboard downloads.
 func WriteDashboardDownloadCount(resp http.ResponseWriter, req *http.Request) {
 	splitPaths := strings.Split(req.URL.Path, "/")
-	if len(splitPaths) != 5 {
+	if len(splitPaths) != dashboardPathSegments {
 		http.Error(resp, "missing path segments", http.StatusNotFound)
 		return
 	}
 
 	ids := strings.Split(splitPaths[4], ",")
-	if len(ids) > 50 {
+	if len(ids) > maxDashboardIDs {
 		http.Error(resp, "too many IDs", http.StatusInternalServerError)
 		return
 	}
@@ -67,9 +72,9 @@ func WriteDashboardDownloadCount(resp http.ResponseWriter, req *http.Request) {
 
 		counter += appendNewData(newboards)
 	}
-	// This format works with badgen.net.
+	// This format works with badgen.net. Subject and status are counts, not request text.
 	reply := fmt.Sprintf(`{"subject": "%v dashboards", "status": %v}`, len(ids), counter)
-	_, _ = resp.Write([]byte(reply))
+	_, _ = resp.Write([]byte(reply)) //nolint:gosec // G705: both values are numbers.
 }
 
 // checkExistingData returns counters for fresh data, and a list of ids that need to be fetched.
@@ -120,7 +125,8 @@ func fetchDashboards(ctx context.Context, ids []string) ([]Dashboard, error) {
 	)
 
 	for idx, id := range ids {
-		if boards[idx], err = fetchDashboard(ctx, id); err != nil {
+		boards[idx], err = fetchDashboard(ctx, id)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -131,7 +137,9 @@ func fetchDashboards(ctx context.Context, ids []string) ([]Dashboard, error) {
 // fetchDashboards returns dashboard data from the grafana api for a single dashboard.
 func fetchDashboard(ctx context.Context, dashID string) (Dashboard, error) {
 	board := Dashboard{Time: time.Now()}
-	if _, err := strconv.ParseInt(dashID, 10, 64); err != nil {
+
+	_, err := strconv.ParseInt(dashID, 10, 64)
+	if err != nil {
 		// We only accept numbers.
 		return board, fmt.Errorf("invalid dashboard ID: %s: %w", dashID, err)
 	}
@@ -139,7 +147,7 @@ func fetchDashboard(ctx context.Context, dashID string) (Dashboard, error) {
 	url := DashboardAPI + dashID
 	log.Println("Fetching", url)
 
-	client := http.Client{Timeout: 10 * time.Second}
+	client := http.Client{Timeout: requestTimeout}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {

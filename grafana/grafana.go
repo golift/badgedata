@@ -9,6 +9,9 @@ import (
 	"golift.io/badgedata"
 )
 
+// /badgedata/grafana/<route> splits into ["", "badgedata", "grafana", route].
+const minPathSegments = 4
+
 //nolint:gochecknoinits // This is how the plugin works.
 func init() {
 	dashboardInit()
@@ -18,7 +21,7 @@ func init() {
 // ServeHTTP is our main traffic handler.
 func ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	splitPaths := strings.Split(req.URL.Path, "/")
-	if len(splitPaths) < 4 {
+	if len(splitPaths) < minPathSegments {
 		http.Error(resp, "missing path segments", http.StatusNotFound)
 		return
 	}

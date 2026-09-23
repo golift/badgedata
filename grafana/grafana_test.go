@@ -1,7 +1,8 @@
-package grafana
+package grafana //nolint:testpackage // tests replace DashboardAPI and the cache.
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -9,16 +10,45 @@ import (
 	"testing"
 )
 
-func TestServeHTTP(t *testing.T) { //nolint:paralleltest // mutates the package dashboard cache.
-	upstream := httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		dashID := strings.Trim(req.URL.Path, "/")
-		if _, err := strconv.ParseInt(dashID, 10, 64); err != nil {
-			http.Error(resp, "bad id", http.StatusBadRequest)
+func TestServeHTTPRejectsBadRoutes(t *testing.T) {
+	t.Parallel()
 
+	short := serve(t, "/badgedata/grafana")
+	if short.Code != http.StatusNotFound {
+		t.Fatalf("short path status %d", short.Code)
+	}
+
+	unknown := serve(t, "/badgedata/grafana/nope")
+	if unknown.Code != http.StatusGone {
+		t.Fatalf("unknown route status %d", unknown.Code)
+	}
+
+	tooMany := strings.TrimRight(strings.Repeat("1,", maxDashboardIDs+1), ",")
+	many := serve(t, "/badgedata/grafana/dashboard-count/"+tooMany)
+
+	if many.Code != http.StatusInternalServerError {
+		t.Fatalf("too many ids status %d body %s", many.Code, many.Body.String())
+	}
+}
+
+func TestServeHTTPDashboardCountUsesCache(t *testing.T) { //nolint:paralleltest // mutates the package dashboard cache.
+	var hits int
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		hits++
+
+		dashID := strings.Trim(req.URL.Path, "/")
+
+		parsedID, err := strconv.ParseInt(dashID, 10, 64)
+		if err != nil {
+			http.Error(resp, "bad id", http.StatusBadRequest)
 			return
 		}
 
-		_, _ = resp.Write([]byte(`{"name":"demo","id":` + dashID + `,"downloads":7}`))
+		_, err = fmt.Fprintf(resp, `{"name":"demo","id":%d,"downloads":7}`, parsedID)
+		if err != nil {
+			return
+		}
 	}))
 	t.Cleanup(upstream.Close)
 
@@ -31,35 +61,7 @@ func TestServeHTTP(t *testing.T) { //nolint:paralleltest // mutates the package 
 	dashboards = map[string]Dashboard{}
 	dashboarMu.Unlock()
 
-	var hits int
-	// Count only after the handler above is the one we installed. Re-wrap.
-	upstream.Config.Handler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		hits++
-		dashID := strings.Trim(req.URL.Path, "/")
-		_, _ = resp.Write([]byte(`{"name":"demo","id":` + dashID + `,"downloads":7}`))
-	})
-
-	short := serve(t, "/badgedata/grafana")
-
-	if short.Code != http.StatusNotFound {
-		t.Fatalf("short path status %d", short.Code)
-	}
-
-	unknown := serve(t, "/badgedata/grafana/nope")
-
-	if unknown.Code != http.StatusGone {
-		t.Fatalf("unknown route status %d", unknown.Code)
-	}
-
-	tooMany := strings.TrimRight(strings.Repeat("1,", 51), ",")
-	many := serve(t, "/badgedata/grafana/dashboard-count/"+tooMany)
-
-	if many.Code != http.StatusInternalServerError {
-		t.Fatalf("too many ids status %d body %s", many.Code, many.Body.String())
-	}
-
 	got := serve(t, "/badgedata/grafana/dashboard-count/42")
-
 	if got.Code != http.StatusOK {
 		t.Fatalf("dashboard status %d body %s", got.Code, got.Body.String())
 	}
@@ -69,7 +71,6 @@ func TestServeHTTP(t *testing.T) { //nolint:paralleltest // mutates the package 
 	}
 
 	cached := serve(t, "/badgedata/grafana/dashboard-count/42")
-
 	if cached.Body.String() != got.Body.String() {
 		t.Fatalf("cached body %s", cached.Body.String())
 	}
