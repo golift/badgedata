@@ -3,6 +3,7 @@
 package badgedata
 
 import (
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -16,27 +17,30 @@ var (
 
 type routers map[string]http.HandlerFunc
 
+// /badgedata/<name> splits into ["", "badgedata", name].
+const minPathSegments = 3
+
 // Handler returns the main handler for /badgedata endpoint.
 func Handler() http.HandlerFunc {
 	routersMu.Lock()
 	defer routersMu.Unlock()
 
 	// We copy all the routes into a new map so we can avoid locking on every request.
-	reroute := make(routers)
-	for i, v := range routes {
-		reroute[i] = v
-	}
+	reroute := make(routers, len(routes))
+	maps.Copy(reroute, routes)
 
 	return reroute.ServeHTTP
 }
 
 func (routeMap routers) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	path := strings.Split(req.URL.Path, "/")
-	if len(path) < 3 {
+	if len(path) < minPathSegments {
 		http.Error(resp, "missing path segments", http.StatusNotFound)
 		return
 	}
+
 	route := path[2]
+
 	handler, ok := routeMap[route]
 	if !ok {
 		http.Error(resp, "not found: "+route, http.StatusNotFound)
@@ -51,8 +55,10 @@ func (routeMap routers) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 func Register(name string, function http.HandlerFunc) {
 	routersMu.Lock()
 	defer routersMu.Unlock()
+
 	if routes == nil {
 		routes = make(routers)
 	}
+
 	routes[name] = function
 }

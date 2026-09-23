@@ -1,15 +1,19 @@
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-  # deprecated
-  - execinquery
-  - gomnd
-  # unused
-  - gochecknoinits
-  - exhaustruct
-  - nlreturn
-  - wsl
-  - mnd
-
-run:
-  timeout: 3m
+    - nlreturn # wsl_v5 is good enough.
+    - wsl # deprecated.
+    - exhaustruct # deprecated.
+    - exhaustruct_v5 # partial literals are normal: JSON decode and http.Client timeout.
+    - gomodguard # deprecated.
+    - depguard # flags this module importing itself.
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
